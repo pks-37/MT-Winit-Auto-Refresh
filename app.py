@@ -1,5 +1,6 @@
-from flask import Flask, render_template, request
+import os
 import time
+from flask import Flask, render_template, request
 
 from sales import run_sales
 from visits import run_visits
@@ -18,8 +19,6 @@ def index():
         end_date = request.form["end_date"]
 
         overall_start = time.time()
-
-        errors = []
 
         reports = [
             ("Sales", run_sales),
@@ -40,17 +39,15 @@ def index():
 
                 results.append({
                     "name": name,
-                    "status": "Success",
+                    "status": "✅ Success",
                     "time": f"{time.time() - start:.1f} sec"
                 })
 
             except Exception as e:
 
-                errors.append(name)
-
                 results.append({
                     "name": name,
-                    "status": f"Failed: {e}",
+                    "status": f"❌ {str(e)}",
                     "time": "-"
                 })
 
@@ -61,8 +58,15 @@ def index():
             total_time=f"{time.time() - overall_start:.1f} sec"
         )
 
-    return render_template("index.html", completed=False)
+    return render_template(
+        "index.html",
+        completed=False
+    )
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(
+        host="0.0.0.0",
+        port=int(os.environ.get("PORT", 5000)),
+        debug=False
+    )
