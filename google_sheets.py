@@ -1,28 +1,53 @@
+import os
+import json
 import sys
+from pathlib import Path
+
 import gspread
 import pandas as pd
 from google.oauth2.service_account import Credentials
-from pathlib import Path
+
 
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/drive"
 ]
 
-if getattr(sys, "frozen", False):
-    base_path = Path(sys._MEIPASS)
+
+# -------------------------------------------------------
+# Credentials
+# -------------------------------------------------------
+
+if "GOOGLE_CREDENTIALS" in os.environ:
+
+    credentials_info = json.loads(os.environ["GOOGLE_CREDENTIALS"])
+
+    creds = Credentials.from_service_account_info(
+        credentials_info,
+        scopes=SCOPES
+    )
+
 else:
-    base_path = Path(__file__).parent
 
-credentials_file = base_path / "credentials.json"
+    if getattr(sys, "frozen", False):
+        base_path = Path(sys._MEIPASS)
+    else:
+        base_path = Path(__file__).parent
 
-creds = Credentials.from_service_account_file(
-    credentials_file,
-    scopes=SCOPES
-)
+    credentials_file = base_path / "credentials.json"
+
+    creds = Credentials.from_service_account_file(
+        credentials_file,
+        scopes=SCOPES
+    )
+
 
 client = gspread.authorize(creds)
 
+
+# -------------------------------------------------------
+# Upload Function
+# -------------------------------------------------------
 
 def upload_dataframe(worksheet_name, df):
 
@@ -53,7 +78,6 @@ def upload_dataframe(worksheet_name, df):
         rows.append(new_row)
 
     chunk_size = 5000
-
     total = len(rows)
 
     for i in range(0, total, chunk_size):
