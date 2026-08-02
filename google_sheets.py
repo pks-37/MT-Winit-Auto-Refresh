@@ -22,7 +22,8 @@ print("GOOGLE_CREDENTIALS present:", "GOOGLE_CREDENTIALS" in os.environ)
 
 if "GOOGLE_CREDENTIALS" in os.environ:
 
-    print("Using Railway credentials")
+    print("Length:", len(os.environ["GOOGLE_CREDENTIALS"]))
+    print("Starts with:", os.environ["GOOGLE_CREDENTIALS"][:30])
 
     credentials_info = json.loads(os.environ["GOOGLE_CREDENTIALS"])
 
@@ -46,8 +47,6 @@ else:
         credentials_file,
         scopes=SCOPES
     )
-
-client = gspread.authorize(creds)
 
 
 # -------------------------------------------------------
