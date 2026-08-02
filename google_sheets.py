@@ -18,7 +18,11 @@ SCOPES = [
 # Credentials
 # -------------------------------------------------------
 
+print("GOOGLE_CREDENTIALS present:", "GOOGLE_CREDENTIALS" in os.environ)
+
 if "GOOGLE_CREDENTIALS" in os.environ:
+
+    print("Using Railway credentials")
 
     credentials_info = json.loads(os.environ["GOOGLE_CREDENTIALS"])
 
@@ -28,6 +32,8 @@ if "GOOGLE_CREDENTIALS" in os.environ:
     )
 
 else:
+
+    print("Using local credentials file")
 
     if getattr(sys, "frozen", False):
         base_path = Path(sys._MEIPASS)
@@ -40,7 +46,6 @@ else:
         credentials_file,
         scopes=SCOPES
     )
-
 
 client = gspread.authorize(creds)
 
