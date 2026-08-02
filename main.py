@@ -7,19 +7,7 @@ from attendance import run_attendance
 from expiry import run_expiry
 
 
-log("=" * 60)
-log("             FARMLEY AUTO REFRESH")
-log("=" * 60)
-
-start_date = input("\nEnter Start Date (YYYY-MM-DD): ").strip()
-end_date = input("Enter End Date (YYYY-MM-DD): ").strip()
-
-overall_start = time.time()
-
-errors = []
-
-
-def execute(name, function):
+def execute(name, function, start_date, end_date, errors):
 
     log(f"\nRefreshing {name}...")
 
@@ -39,24 +27,40 @@ def execute(name, function):
         log(f"Reason : {e}")
 
 
-execute("Sales", run_sales)
-execute("Visits", run_visits)
-execute("Attendance", run_attendance)
-execute("Aging", run_expiry)
+def main():
+
+    log("=" * 60)
+    log("             FARMLEY AUTO REFRESH")
+    log("=" * 60)
+
+    start_date = input("\nEnter Start Date (YYYY-MM-DD): ").strip()
+    end_date = input("Enter End Date (YYYY-MM-DD): ").strip()
+
+    overall_start = time.time()
+
+    errors = []
+
+    execute("Sales", run_sales, start_date, end_date, errors)
+    execute("Visits", run_visits, start_date, end_date, errors)
+    execute("Attendance", run_attendance, start_date, end_date, errors)
+    execute("Aging", run_expiry, start_date, end_date, errors)
+
+    log("\n" + "=" * 60)
+
+    if errors:
+
+        log(f"Completed with {len(errors)} error(s).\n")
+
+        for error in errors:
+            log(f"❌ {error}")
+
+    else:
+
+        log("✅ ALL REPORTS REFRESHED SUCCESSFULLY!")
+
+    log(f"\n⏱ Total Time : {time.time() - overall_start:.1f} sec")
+    log("=" * 60)
 
 
-log("\n" + "=" * 60)
-
-if errors:
-
-    log(f"Completed with {len(errors)} error(s).\n")
-
-    for error in errors:
-        log(f"❌ {error}")
-
-else:
-
-    log("✅ ALL REPORTS REFRESHED SUCCESSFULLY!")
-
-log(f"\n⏱ Total Time : {time.time() - overall_start:.1f} sec")
-log("=" * 60)
+if __name__ == "__main__":
+    main()
