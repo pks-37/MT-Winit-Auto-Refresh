@@ -15,38 +15,33 @@ SCOPES = [
 
 
 # -------------------------------------------------------
-# Credentials
+# Google Client
 # -------------------------------------------------------
 
-print("GOOGLE_CREDENTIALS present:", "GOOGLE_CREDENTIALS" in os.environ)
+def get_client():
 
-if "GOOGLE_CREDENTIALS" in os.environ:
+    if os.getenv("GOOGLE_CREDENTIALS"):
 
-    print("Length:", len(os.environ["GOOGLE_CREDENTIALS"]))
-    print("Starts with:", os.environ["GOOGLE_CREDENTIALS"][:30])
+        creds = Credentials.from_service_account_info(
+            json.loads(os.environ["GOOGLE_CREDENTIALS"]),
+            scopes=SCOPES
+        )
 
-    credentials_info = json.loads(os.environ["GOOGLE_CREDENTIALS"])
-
-    creds = Credentials.from_service_account_info(
-        credentials_info,
-        scopes=SCOPES
-    )
-
-else:
-
-    print("Using local credentials file")
-
-    if getattr(sys, "frozen", False):
-        base_path = Path(sys._MEIPASS)
     else:
-        base_path = Path(__file__).parent
 
-    credentials_file = base_path / "credentials.json"
+        if getattr(sys, "frozen", False):
+            base_path = Path(sys._MEIPASS)
+        else:
+            base_path = Path(__file__).parent
 
-    creds = Credentials.from_service_account_file(
-        credentials_file,
-        scopes=SCOPES
-    )
+        credentials_file = base_path / "credentials.json"
+
+        creds = Credentials.from_service_account_file(
+            credentials_file,
+            scopes=SCOPES
+        )
+
+    return gspread.authorize(creds)
 
 
 # -------------------------------------------------------
@@ -54,6 +49,8 @@ else:
 # -------------------------------------------------------
 
 def upload_dataframe(worksheet_name, df):
+
+    client = get_client()
 
     spreadsheet = client.open("SFA Backend")
     worksheet = spreadsheet.worksheet(worksheet_name)
