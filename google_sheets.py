@@ -5,6 +5,7 @@ from pathlib import Path
 
 import gspread
 import pandas as pd
+import streamlit as st
 from google.oauth2.service_account import Credentials
 
 
@@ -20,13 +21,23 @@ SCOPES = [
 
 def get_client():
 
-    if os.getenv("GOOGLE_CREDENTIALS"):
+    # 1. Streamlit Secrets
+    if "GOOGLE_CREDENTIALS" in st.secrets:
+
+        creds = Credentials.from_service_account_info(
+            json.loads(st.secrets["GOOGLE_CREDENTIALS"]),
+            scopes=SCOPES
+        )
+
+    # 2. Environment Variable (Railway etc.)
+    elif os.getenv("GOOGLE_CREDENTIALS"):
 
         creds = Credentials.from_service_account_info(
             json.loads(os.environ["GOOGLE_CREDENTIALS"]),
             scopes=SCOPES
         )
 
+    # 3. Local credentials.json
     else:
 
         if getattr(sys, "frozen", False):
