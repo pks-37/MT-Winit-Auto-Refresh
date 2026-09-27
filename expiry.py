@@ -1,8 +1,9 @@
 import requests
 import pandas as pd
 
-from config import BASE_URL, HEADERS, LOGIN_USER
+from config import BASE_URL, LOGIN_USER, get_auth_headers
 from google_sheets import upload_dataframe
+
 
 session = requests.Session()
 
@@ -26,8 +27,8 @@ def get_expiry(start_date, end_date):
     response = session.get(
         url,
         params=params,
-        headers=HEADERS,
-        timeout=(10,60)
+        headers=get_auth_headers(),
+        timeout=(10, 60)
     )
 
     response.raise_for_status()
@@ -35,7 +36,6 @@ def get_expiry(start_date, end_date):
     visits = response.json()["data"]
 
     rows = []
-
     total = len(visits)
 
     print(f"Found {total} visits")
@@ -64,8 +64,8 @@ def get_expiry(start_date, end_date):
                 r = session.get(
                     product_url,
                     params=product_params,
-                    headers=HEADERS,
-                    timeout=(10,60)
+                    headers=get_auth_headers(),
+                    timeout=(10, 60)
                 )
 
                 r.raise_for_status()
@@ -73,7 +73,6 @@ def get_expiry(start_date, end_date):
                 products = r.json().get("data", [])
 
                 success = True
-
                 break
 
             except requests.exceptions.RequestException:
@@ -95,27 +94,16 @@ def get_expiry(start_date, end_date):
         for product in products:
 
             rows.append({
-
                 "Date": visit["visitedDate"],
-
                 "TL Code": visit["tlCode"].strip(),
-
                 "TL Name": visit["tlName"].strip(),
-
                 "Field User Code": visit["fieldUserCode"],
-
                 "Field User Name": visit["fieldUserName"],
-
                 "Customer Name": visit["customerName"],
-
                 "Chain Name": visit["chainName"],
-
                 "ItemName": product["productName"],
-
                 "ExpiryDate": product["expiryDate"],
-
                 "ExpiryQty": product["quantity"]
-
             })
 
         print(
@@ -128,58 +116,35 @@ def get_expiry(start_date, end_date):
 
     return pd.DataFrame(rows)
 
+
 def clean_expiry(df):
 
-    # -----------------------------------
     # Remove GT
-    # -----------------------------------
-
     df = df[df["Chain Name"] != "GT"]
 
-    # -----------------------------------
     # Remove blank expiry dates
-    # -----------------------------------
-
     df = df[df["ExpiryDate"].notna()]
 
-    # -----------------------------------
     # Convert dates
-    # -----------------------------------
-
     df["Date"] = pd.to_datetime(df["Date"])
-
     df["ExpiryDate"] = pd.to_datetime(df["ExpiryDate"])
 
-    # -----------------------------------
-    # Sort exactly like VBA
-    # Customer Name
-    # → Expiry Date
-    # → Expiry Qty (Descending)
-    # -----------------------------------
-
+    # Sort
     df = df.sort_values(
-
         by=[
             "Customer Name",
             "ExpiryDate",
             "ExpiryQty"
         ],
-
         ascending=[
             True,
             True,
             False
         ],
-
         kind="stable"
-
     )
 
- 
-    # -----------------------------------
     # Final column order
-    # -----------------------------------
-
     df = df[
         [
             "Date",
@@ -197,11 +162,15 @@ def clean_expiry(df):
 
     return df
 
-def upload_expiry(df):
 
+def upload_expiry(df):
     upload_dataframe("Aging_Clean", df)
 
-def run_expiry(start_date="2026-07-01", end_date="2026-07-31"):
+
+def run_expiry(
+    start_date,
+    end_date
+):
 
     print("=" * 50)
     print("        FARMLEY AGING REFRESH")

@@ -1,7 +1,7 @@
 import requests
 import pandas as pd
 
-from config import BASE_URL, HEADERS, LOGIN_USER
+from config import BASE_URL, LOGIN_USER, get_auth_headers
 from google_sheets import upload_dataframe
 
 def get_visits(start_date, end_date):
@@ -14,7 +14,7 @@ def get_visits(start_date, end_date):
         "loginUserCode": LOGIN_USER
     }
 
-    response = requests.get(url, params=params, headers=HEADERS)
+    response = requests.get(url, params=params, headers=get_auth_headers())
     response.raise_for_status()
 
     return pd.DataFrame(response.json()["data"])
@@ -94,7 +94,7 @@ def upload_visits(df):
 
     upload_dataframe("Visits_Clean", df)
 
-def run_visits(start_date="2026-07-01", end_date="2026-07-31"):
+def run_visits(start_date, end_date):
 
     df = get_visits(start_date, end_date)
     df = clean_visits(df)
