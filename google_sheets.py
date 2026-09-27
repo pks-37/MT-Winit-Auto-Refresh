@@ -5,7 +5,6 @@ from pathlib import Path
 
 import gspread
 import pandas as pd
-import streamlit as st
 from google.oauth2.service_account import Credentials
 
 
@@ -21,24 +20,17 @@ SCOPES = [
 
 def get_client():
 
-    # 1. Streamlit Secrets
-    if "GOOGLE_CREDENTIALS" in st.secrets:
-        print(type(st.secrets["GOOGLE_CREDENTIALS"]))
+    # 1. Vercel / Environment Variable
+    google_credentials = os.getenv("GOOGLE_CREDENTIALS")
+
+    if google_credentials:
 
         creds = Credentials.from_service_account_info(
-            json.loads(st.secrets["GOOGLE_CREDENTIALS"]),
+            json.loads(google_credentials),
             scopes=SCOPES
         )
 
-    # 2. Environment Variable (Railway etc.)
-    elif os.getenv("GOOGLE_CREDENTIALS"):
-
-        creds = Credentials.from_service_account_info(
-            json.loads(os.environ["GOOGLE_CREDENTIALS"]),
-            scopes=SCOPES
-        )
-
-    # 3. Local credentials.json
+    # 2. Local credentials.json
     else:
 
         if getattr(sys, "frozen", False):
@@ -65,16 +57,19 @@ def upload_dataframe(worksheet_name, df):
     client = get_client()
 
     spreadsheet = client.open("SFA Backend")
+
     worksheet = spreadsheet.worksheet(worksheet_name)
 
     worksheet.clear()
 
+    # Upload headers
     worksheet.update(
         [df.columns.tolist()],
         "A1",
         value_input_option="USER_ENTERED"
     )
 
+    # Prepare rows
     rows = []
 
     for row in df.fillna("").values.tolist():
@@ -85,12 +80,15 @@ def upload_dataframe(worksheet_name, df):
 
             if isinstance(value, pd.Timestamp):
                 new_row.append(value.strftime("%m/%d/%Y"))
+
             else:
                 new_row.append(value)
 
         rows.append(new_row)
 
+    # Upload in chunks
     chunk_size = 5000
+
     total = len(rows)
 
     for i in range(0, total, chunk_size):
@@ -101,6 +99,10 @@ def upload_dataframe(worksheet_name, df):
             value_input_option="USER_ENTERED"
         )
 
-        print(f"Uploaded {min(i + chunk_size, total)}/{total} rows")
+        print(
+            f"Uploaded {min(i + chunk_size, total)}/{total} rows"
+        )
 
-    print(f"✅ {worksheet_name} uploaded successfully!")
+    print(
+        f"✅ {worksheet_name} uploaded successfully!"
+    )
