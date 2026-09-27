@@ -23,7 +23,7 @@ def get_client():
 
     # 1. Streamlit Secrets
     if "GOOGLE_CREDENTIALS" in st.secrets:
-	print(type(st.secrets["GOOGLE_CREDENTIALS"]))
+        print(type(st.secrets["GOOGLE_CREDENTIALS"]))
 
         creds = Credentials.from_service_account_info(
             json.loads(st.secrets["GOOGLE_CREDENTIALS"]),
