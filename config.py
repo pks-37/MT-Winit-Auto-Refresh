@@ -1,6 +1,5 @@
 import json
 import os
-
 from playwright.sync_api import sync_playwright
 
 
@@ -14,6 +13,10 @@ SFA_URL = "https://farmley-prod-v1.winitsoftware.com/login"
 LOGIN_USER = os.getenv("FARMLEY_LOGIN_USER")
 PASSWORD = os.getenv("FARMLEY_PASSWORD")
 
+# Used on Vercel
+REPORTS_COOKIE = os.getenv("FARMLEY_REPORTS_COOKIE")
+
+# Used locally
 SESSION_FILE = "farmley_session.json"
 
 
@@ -23,6 +26,12 @@ SESSION_FILE = "farmley_session.json"
 
 def load_saved_reports_cookie():
 
+    # Vercel / Environment Variable
+    if REPORTS_COOKIE:
+        print("Using Reports cookie from environment variable.")
+        return REPORTS_COOKIE
+
+    # Local PC / saved session file
     if not os.path.exists(SESSION_FILE):
         return None
 
@@ -46,7 +55,7 @@ def load_saved_reports_cookie():
 
 
 # ============================================================
-# CREATE FRESH REPORTS SESSION AUTOMATICALLY
+# CREATE FRESH REPORTS SESSION
 # ============================================================
 
 def create_reports_session():
@@ -55,16 +64,14 @@ def create_reports_session():
 
     with sync_playwright() as p:
 
-        browser = p.chromium.launch(headless=False)
+        browser = p.chromium.launch(
+            headless=False
+        )
 
         context = browser.new_context()
-
         page = context.new_page()
 
-        # ----------------------------------------------------
-        # 1. Open SFA login
-        # ----------------------------------------------------
-
+        # Open SFA
         page.goto(
             SFA_URL,
             wait_until="domcontentloaded",
@@ -73,12 +80,8 @@ def create_reports_session():
 
         print("Farmley SFA opened.")
 
-        # ----------------------------------------------------
-        # 2. Login automatically
-        # ----------------------------------------------------
-
+        # Login
         page.locator("input").nth(0).fill(LOGIN_USER)
-
         page.locator("input").nth(1).fill(PASSWORD)
 
         page.get_by_role(
@@ -88,18 +91,12 @@ def create_reports_session():
 
         print("SFA login submitted.")
 
-        # ----------------------------------------------------
-        # 3. Wait for SFA dashboard
-        # ----------------------------------------------------
-
+        # Wait for dashboard
         page.wait_for_timeout(5000)
 
         print("SFA dashboard loaded.")
 
-        # ----------------------------------------------------
-        # 4. Open Reports Dashboard
-        # ----------------------------------------------------
-
+        # Open Reports
         page.goto(
             BASE_URL,
             wait_until="networkidle",
@@ -108,24 +105,15 @@ def create_reports_session():
 
         print("Reports Dashboard opened.")
 
-        # ----------------------------------------------------
-        # 5. Allow Reports application to create cookie
-        # ----------------------------------------------------
-
+        # Allow cookie creation
         page.wait_for_timeout(5000)
 
-        # ----------------------------------------------------
-        # 6. Save complete browser session
-        # ----------------------------------------------------
-
+        # Save local session
         context.storage_state(
             path=SESSION_FILE
         )
 
-        # ----------------------------------------------------
-        # 7. Find Reports session cookie
-        # ----------------------------------------------------
-
+        # Find Reports cookie
         cookies = context.cookies()
 
         reports_cookie = None
@@ -135,17 +123,11 @@ def create_reports_session():
             if cookie.get("name") == "farmley_reports_session":
 
                 reports_cookie = cookie.get("value")
-
                 break
 
         browser.close()
 
-        # ----------------------------------------------------
-        # 8. Validate cookie
-        # ----------------------------------------------------
-
         if not reports_cookie:
-
             raise Exception(
                 "Reports session cookie was not created."
             )
@@ -162,15 +144,12 @@ def create_reports_session():
 def get_auth_headers():
 
     # --------------------------------------------------------
-    # First try existing saved session
+    # 1. Vercel / Environment Variable
     # --------------------------------------------------------
-
-    cookie = load_saved_reports_cookie()
+    cookie = os.getenv("FARMLEY_REPORTS_COOKIE")
 
     if cookie:
-
-        print("Using saved Reports session.")
-
+        print("Using FARMLEY_REPORTS_COOKIE from environment.")
         return {
             "Accept": "*/*",
             "User-Agent": "Mozilla/5.0",
@@ -178,10 +157,23 @@ def get_auth_headers():
         }
 
     # --------------------------------------------------------
-    # Saved session unavailable → create automatically
+    # 2. Local saved session
     # --------------------------------------------------------
+    cookie = load_saved_reports_cookie()
 
+    if cookie:
+        print("Using saved Reports session.")
+        return {
+            "Accept": "*/*",
+            "User-Agent": "Mozilla/5.0",
+            "Cookie": f"farmley_reports_session={cookie}"
+        }
+
+    # --------------------------------------------------------
+    # 3. Local machine only → create fresh session
+    # --------------------------------------------------------
     print("Saved Reports session unavailable.")
+    print("Creating fresh Reports session...")
 
     cookie = create_reports_session()
 
