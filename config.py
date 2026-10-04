@@ -115,6 +115,12 @@ def create_reports_session():
             for c in cookies
         ], flush=True)
 
+        print(
+                "DEBUG LOCAL STORAGE KEYS:",
+                page.evaluate("Object.keys(localStorage)"),
+                flush=True
+        ) 
+
         reports_cookie = None
 
         for cookie in cookies:
