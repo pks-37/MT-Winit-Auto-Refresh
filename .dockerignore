@@ -1,0 +1,12 @@
+.git
+.gitignore
+__pycache__
+build
+dist
+*.spec
+logs
+credentials.json
+farmley_session.json
+.env
+.vscode
+Sales.xlsx
