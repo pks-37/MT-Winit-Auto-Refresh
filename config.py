@@ -1,7 +1,6 @@
-import json
 import os
+import json
 
-os.environ["PLAYWRIGHT_BROWSERS_PATH"] = "/ms-playwright"
 from playwright.sync_api import sync_playwright
 
 
@@ -15,10 +14,6 @@ SFA_URL = "https://farmley-prod-v1.winitsoftware.com/login"
 LOGIN_USER = os.getenv("FARMLEY_LOGIN_USER")
 PASSWORD = os.getenv("FARMLEY_PASSWORD")
 
-# Used locally only
-SESSION_FILE = "farmley_session.json"
-
-# Cache fresh cookie during one request
 _FRESH_COOKIE = None
 
 
@@ -28,9 +23,9 @@ _FRESH_COOKIE = None
 
 def create_reports_session():
 
-    print("========================================")
-    print("CREATING FRESH FARMLEY REPORTS SESSION")
-    print("========================================")
+    print("========================================", flush=True)
+    print("CREATING FRESH FARMLEY REPORTS SESSION", flush=True)
+    print("========================================", flush=True)
 
     if not LOGIN_USER or not PASSWORD:
         raise Exception(
@@ -39,7 +34,6 @@ def create_reports_session():
 
     with sync_playwright() as p:
 
-        # Vercel must run headless
         browser = p.chromium.launch(
             headless=True
         )
@@ -49,10 +43,10 @@ def create_reports_session():
         page = context.new_page()
 
         # ----------------------------------------------------
-        # 1. Open SFA Login
+        # OPEN SFA LOGIN
         # ----------------------------------------------------
 
-        print("Opening SFA login...")
+        print("Opening SFA login...", flush=True)
 
         page.goto(
             SFA_URL,
@@ -60,10 +54,10 @@ def create_reports_session():
             timeout=60000
         )
 
-        print("SFA login page opened.")
+        print("SFA login page opened.", flush=True)
 
         # ----------------------------------------------------
-        # 2. Login
+        # LOGIN
         # ----------------------------------------------------
 
         page.locator("input").nth(0).fill(LOGIN_USER)
@@ -74,21 +68,49 @@ def create_reports_session():
             name="Sign In"
         ).click()
 
-        print("Login submitted.")
+        print("Login submitted.", flush=True)
+
+        # Give the authentication process time to complete
+        page.wait_for_timeout(8000)
+
+        print(
+            "Current URL after login:",
+            page.url,
+            flush=True
+        )
 
         # ----------------------------------------------------
-        # 3. Wait for SFA authentication
+        # CAPTURE SFA STORAGE
         # ----------------------------------------------------
 
-        page.wait_for_timeout(5000)
+        try:
 
-        print("SFA authentication completed.")
+            sfa_storage = page.evaluate(
+                """() => ({
+                    localStorage: Object.keys(localStorage),
+                    sessionStorage: Object.keys(sessionStorage)
+                })"""
+            )
+
+            print(
+                "SFA STORAGE:",
+                json.dumps(sfa_storage),
+                flush=True
+            )
+
+        except Exception as e:
+
+            print(
+                "Could not read SFA storage:",
+                str(e),
+                flush=True
+            )
 
         # ----------------------------------------------------
-        # 4. Open Reports Dashboard
+        # OPEN REPORTS
         # ----------------------------------------------------
 
-        print("Opening Reports Dashboard...")
+        print("Opening Reports Dashboard...", flush=True)
 
         page.goto(
             BASE_URL,
@@ -96,58 +118,88 @@ def create_reports_session():
             timeout=60000
         )
 
-        print("Reports Dashboard opened.")
+        page.wait_for_timeout(8000)
 
-        # Give Reports application time to create cookie
-        page.wait_for_timeout(5000)
+        print(
+            "Reports Dashboard opened.",
+            flush=True
+        )
+
+        print(
+            "Reports URL:",
+            page.url,
+            flush=True
+        )
 
         # ----------------------------------------------------
-        # 5. Extract fresh Reports cookie
+        # CAPTURE ALL COOKIES
         # ----------------------------------------------------
 
         cookies = context.cookies()
 
-        print("DEBUG COOKIES:", [
-            {
-                "name": c.get("name"),
-                "domain": c.get("domain")
-            }
-            for c in cookies
-        ], flush=True)
-
         print(
-                "DEBUG LOCAL STORAGE KEYS:",
-                page.evaluate("Object.keys(localStorage)"),
+            "DEBUG COOKIES:",
+            json.dumps([
+                {
+                    "name": c.get("name"),
+                    "domain": c.get("domain"),
+                    "path": c.get("path")
+                }
+                for c in cookies
+            ]),
+            flush=True
+        )
+
+        # ----------------------------------------------------
+        # CAPTURE REPORTS STORAGE
+        # ----------------------------------------------------
+
+        try:
+
+            reports_storage = page.evaluate(
+                """() => ({
+                    localStorage: Object.keys(localStorage),
+                    sessionStorage: Object.keys(sessionStorage)
+                })"""
+            )
+
+            print(
+                "REPORTS STORAGE:",
+                json.dumps(reports_storage),
                 flush=True
-        ) 
+            )
 
-        reports_cookie = None
+        except Exception as e:
 
-        for cookie in cookies:
+            print(
+                "Could not read Reports storage:",
+                str(e),
+                flush=True
+            )
 
-            if cookie.get("name") == "farmley_reports_session":
+        # ----------------------------------------------------
+        # BUILD COOKIE HEADER FROM WHATEVER EXISTS
+        # ----------------------------------------------------
 
-                reports_cookie = cookie.get("value")
-
-                break
+        cookie_header = "; ".join(
+            f"{c['name']}={c['value']}"
+            for c in cookies
+        )
 
         browser.close()
 
-        # ----------------------------------------------------
-        # 6. Validate
-        # ----------------------------------------------------
-
-        if not reports_cookie:
+        if not cookie_header:
 
             raise Exception(
-                "Reports session cookie was not created after login."
+                "No authentication cookies were created after login."
             )
 
-        print("========================================")
-        print("FRESH REPORTS COOKIE CREATED")
-        print("========================================")
+        print(
+            "Authentication cookies captured successfully.",
+            flush=True
+        )
 
-        return reports_cookie
+        return cookie_header
 
 
 # ============================================================
@@ -158,28 +210,26 @@ def get_auth_headers():
 
     global _FRESH_COOKIE
 
-    # --------------------------------------------------------
-    # IMPORTANT:
-    # Create the cookie ONLY ONCE per Refresh Reports request.
-    #
-    # Sales → get_auth_headers()
-    # Visits → get_auth_headers()
-    # Attendance → get_auth_headers()
-    # Aging → get_auth_headers()
-    #
-    # All four will reuse the same fresh cookie.
-    # --------------------------------------------------------
-
     if _FRESH_COOKIE:
 
-        print("Using freshly generated Reports session.")
+        print(
+            "Using existing fresh Reports session.",
+            flush=True
+        )
 
         cookie = _FRESH_COOKIE
 
     else:
 
-        print("No fresh session exists.")
-        print("Logging into Winit to create a fresh Reports session...")
+        print(
+            "No fresh session exists.",
+            flush=True
+        )
+
+        print(
+            "Creating fresh Winit authentication session...",
+            flush=True
+        )
 
         cookie = create_reports_session()
 
@@ -188,5 +238,5 @@ def get_auth_headers():
     return {
         "Accept": "*/*",
         "User-Agent": "Mozilla/5.0",
-        "Cookie": f"farmley_reports_session={cookie}"
+        "Cookie": cookie
     }
