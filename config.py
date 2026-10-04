@@ -1,6 +1,11 @@
 import json
 import os
 
+os.environ["PLAYWRIGHT_BROWSERS_PATH"] = os.path.join(
+    os.path.dirname(__file__),
+    ".playwright"
+)
+
 from playwright.sync_api import sync_playwright
 
 
