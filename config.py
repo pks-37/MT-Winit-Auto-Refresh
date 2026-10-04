@@ -107,6 +107,14 @@ def create_reports_session():
 
         cookies = context.cookies()
 
+        print("DEBUG COOKIES:", [
+            {
+                "name": c.get("name"),
+                "domain": c.get("domain")
+            }
+            for c in cookies
+        ], flush=True)
+
         reports_cookie = None
 
         for cookie in cookies:
