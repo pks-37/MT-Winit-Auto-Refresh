@@ -192,8 +192,24 @@ def create_reports_session():
 
         if not cookie_header:
 
+            try:
+                final_storage = page.evaluate(
+                    """() => ({
+                        localStorage: Object.keys(localStorage),
+                        sessionStorage: Object.keys(sessionStorage)
+                    })"""
+                )
+            except Exception:
+                final_storage = {
+                    "localStorage": "UNAVAILABLE",
+                    "sessionStorage": "UNAVAILABLE"
+                }
+
             raise Exception(
-                "No authentication cookies were created after login."
+                "NO COOKIES | "
+                f"SFA URL: {SFA_URL} | "
+                f"REPORTS URL: {page.url} | "
+                f"STORAGE: {json.dumps(final_storage)}"
             )
 
         print(
