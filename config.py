@@ -82,6 +82,38 @@ def create_reports_session():
         )
 
         # ----------------------------------------------------
+        # INSPECT AUTHENTICATION ON SFA DOMAIN
+        # ----------------------------------------------------
+
+        sfa_cookies = context.cookies()
+
+        print(
+            "SFA COOKIES:",
+            json.dumps([
+                {
+                    "name": c.get("name"),
+                    "domain": c.get("domain"),
+                    "path": c.get("path")
+                }
+                for c in sfa_cookies
+            ]),
+            flush=True
+        )
+
+        sfa_storage = page.evaluate(
+            """() => ({
+                localStorage: Object.keys(localStorage),
+                sessionStorage: Object.keys(sessionStorage)
+            })"""
+        )
+
+        print(
+            "SFA STORAGE:",
+            json.dumps(sfa_storage),
+            flush=True
+        )
+
+        # ----------------------------------------------------
         # CAPTURE SFA STORAGE
         # ----------------------------------------------------
 
