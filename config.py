@@ -58,12 +58,23 @@ def create_reports_session():
 
         print("SFA login page opened.", flush=True)
 
+       
         # ----------------------------------------------------
         # LOGIN
         # ----------------------------------------------------
 
-        page.locator("input").nth(0).fill(LOGIN_USER)
-        page.locator("input").nth(1).fill(PASSWORD)
+        inputs = page.locator("input")
+
+        print(
+            "LOGIN INPUT COUNT:",
+            inputs.count(),
+            flush=True
+        )
+
+        inputs.nth(0).fill(LOGIN_USER)
+        inputs.nth(1).fill(PASSWORD)
+
+        print("Credentials filled.", flush=True)
 
         page.get_by_role(
             "button",
@@ -72,8 +83,36 @@ def create_reports_session():
 
         print("Login submitted.", flush=True)
 
-        # Give the authentication process time to complete
-        page.wait_for_timeout(8000)
+        # Wait for the actual login navigation/state change
+        try:
+
+            page.wait_for_url(
+                lambda url: "/login" not in url,
+                timeout=30000
+            )
+
+            print(
+                "LOGIN SUCCESS - URL:",
+                page.url,
+                flush=True
+            )
+
+        except Exception:
+
+            print(
+                "LOGIN DID NOT LEAVE LOGIN PAGE.",
+                flush=True
+            )
+
+            print(
+                "CURRENT URL:",
+                page.url,
+                flush=True
+            )
+
+            raise Exception(
+                f"Winit login failed. Still on: {page.url}"
+            )
 
         print(
             "Current URL after login:",
