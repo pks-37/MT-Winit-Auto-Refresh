@@ -1,8 +1,4 @@
-import json
 import os
-
-os.environ["PLAYWRIGHT_BROWSERS_PATH"] = "/ms-playwright"
-
 from playwright.sync_api import sync_playwright
 
 
@@ -16,60 +12,7 @@ SFA_URL = "https://farmley-prod-v1.winitsoftware.com/login"
 LOGIN_USER = os.getenv("FARMLEY_LOGIN_USER")
 PASSWORD = os.getenv("FARMLEY_PASSWORD")
 
-# Vercel environment variable
-REPORTS_COOKIE = os.getenv("FARMLEY_REPORTS_COOKIE")
-
-# Local session file
-SESSION_FILE = "farmley_session.json"
-
-
-# ============================================================
-# LOAD SAVED REPORTS COOKIE
-# ============================================================
-
-def load_saved_reports_cookie():
-
-    # Vercel / Environment Variable
-    if REPORTS_COOKIE:
-        print(
-            "Using Reports cookie from environment variable.",
-            flush=True
-        )
-        return REPORTS_COOKIE
-
-    # Local PC / saved session file
-    if not os.path.exists(SESSION_FILE):
-        return None
-
-    try:
-
-        with open(
-            SESSION_FILE,
-            "r",
-            encoding="utf-8"
-        ) as f:
-
-            state = json.load(f)
-
-        for cookie in state.get("cookies", []):
-
-            if (
-                cookie.get("name") == "farmley_reports_session"
-                and
-                "farmley-prod-v1-reports.winitsoftware.com"
-                in cookie.get("domain", "")
-            ):
-                return cookie.get("value")
-
-    except Exception as e:
-
-        print(
-            "Could not load saved Reports session:",
-            str(e),
-            flush=True
-        )
-
-    return None
+_FRESH_COOKIE = None
 
 
 # ============================================================
@@ -78,10 +21,9 @@ def load_saved_reports_cookie():
 
 def create_reports_session():
 
-    print(
-        "Creating fresh Farmley Reports session...",
-        flush=True
-    )
+    print("========================================", flush=True)
+    print("CREATING FRESH WINIT REPORTS SESSION", flush=True)
+    print("========================================", flush=True)
 
     if not LOGIN_USER or not PASSWORD:
         raise Exception(
@@ -95,17 +37,13 @@ def create_reports_session():
         )
 
         context = browser.new_context()
-
         page = context.new_page()
 
         # ----------------------------------------------------
         # OPEN SFA
         # ----------------------------------------------------
 
-        print(
-            "Opening SFA login...",
-            flush=True
-        )
+        print("Opening SFA login...", flush=True)
 
         page.goto(
             SFA_URL,
@@ -113,122 +51,116 @@ def create_reports_session():
             timeout=60000
         )
 
-        print(
-            "Farmley SFA opened.",
-            flush=True
-        )
+        print("SFA login opened.", flush=True)
 
         # ----------------------------------------------------
         # LOGIN
         # ----------------------------------------------------
 
-        page.locator("input").nth(0).fill(
-            LOGIN_USER
+        inputs = page.locator("input")
+
+        print(
+            "Input count:",
+            inputs.count(),
+            flush=True
         )
 
-        page.locator("input").nth(1).fill(
-            PASSWORD
-        )
+        inputs.nth(0).fill(LOGIN_USER)
+        inputs.nth(1).fill(PASSWORD)
 
         page.get_by_role(
             "button",
             name="Sign In"
         ).click()
 
-        print(
-            "SFA login submitted.",
-            flush=True
+        print("Login submitted.", flush=True)
+
+        # Wait for SFA authentication
+        page.wait_for_url(
+            lambda url: "/login" not in url,
+            timeout=30000
         )
 
-        # ----------------------------------------------------
-        # WAIT FOR SFA
-        # ----------------------------------------------------
-
-        page.wait_for_timeout(5000)
+        page.wait_for_timeout(3000)
 
         print(
-            "SFA authentication wait completed.",
-            flush=True
-        )
-
-        print(
-            "Current SFA URL:",
+            "SFA LOGIN SUCCESS:",
             page.url,
             flush=True
         )
 
         # ----------------------------------------------------
-        # OPEN REPORTS
+        # FIND NEW REPORTS
         # ----------------------------------------------------
 
+        print("Finding New Reports...", flush=True)
+
+        reports_link = page.get_by_text(
+            "New Reports",
+            exact=True
+        )
+
         print(
-            "Opening Reports Dashboard...",
+            "New Reports elements:",
+            reports_link.count(),
             flush=True
         )
 
-        page.goto(
-            BASE_URL,
-            wait_until="networkidle",
+        if reports_link.count() == 0:
+            raise Exception(
+                "New Reports link not found after SFA login."
+            )
+
+        # ----------------------------------------------------
+        # CLICK NEW REPORTS
+        # ----------------------------------------------------
+
+        print("Clicking New Reports...", flush=True)
+
+        reports_link.first.click()
+
+        # Wait for Reports application
+        page.wait_for_url(
+            lambda url: "farmley-prod-v1-reports.winitsoftware.com"
+            in url,
             timeout=60000
         )
 
-        print(
-            "Reports Dashboard opened.",
-            flush=True
-        )
-
-        # Allow Reports application to create cookie
         page.wait_for_timeout(5000)
 
         print(
-            "Reports URL:",
+            "Reports loaded:",
             page.url,
             flush=True
         )
 
         # ----------------------------------------------------
-        # SAVE LOCAL SESSION
-        # ----------------------------------------------------
-
-        try:
-
-            context.storage_state(
-                path=SESSION_FILE
-            )
-
-        except Exception as e:
-
-            print(
-                "Could not save local session:",
-                str(e),
-                flush=True
-            )
-
-        # ----------------------------------------------------
-        # FIND REPORTS COOKIE
+        # CAPTURE REPORTS COOKIE
         # ----------------------------------------------------
 
         cookies = context.cookies()
-
-        print(
-            "COOKIE NAMES:",
-            json.dumps([
-                {
-                    "name": c.get("name"),
-                    "domain": c.get("domain")
-                }
-                for c in cookies
-            ]),
-            flush=True
-        )
 
         reports_cookie = None
 
         for cookie in cookies:
 
-            if cookie.get("name") == "farmley_reports_session":
+            if (
+                cookie.get("name")
+                == "farmley_reports_session"
+            ):
 
                 reports_cookie = cookie.get("value")
+
+                print(
+                    "Reports cookie found.",
+                    flush=True
+                )
+
+                print(
+                    "Cookie domain:",
+                    cookie.get("domain"),
+                    flush=True
+                )
 
                 break
 
@@ -241,13 +173,13 @@ def create_reports_session():
         if not reports_cookie:
 
             raise Exception(
-                "Reports session cookie was not created."
+                "Reports page opened successfully, "
+                "but farmley_reports_session cookie was not found."
             )
 
-        print(
-            "Fresh Reports session created successfully.",
-            flush=True
-        )
+        print("========================================", flush=True)
+        print("FRESH REPORTS COOKIE CAPTURED", flush=True)
+        print("========================================", flush=True)
 
         return reports_cookie
 
@@ -258,70 +190,30 @@ def create_reports_session():
 
 def get_auth_headers():
 
-    # --------------------------------------------------------
-    # 1. VERCEL ENVIRONMENT COOKIE
-    # --------------------------------------------------------
+    global _FRESH_COOKIE
 
-    cookie = os.getenv(
-        "FARMLEY_REPORTS_COOKIE"
-    )
-
-    if cookie:
+    if _FRESH_COOKIE:
 
         print(
-            "Using FARMLEY_REPORTS_COOKIE from environment.",
+            "Using existing fresh Reports session.",
             flush=True
         )
 
-        return {
-            "Accept": "*/*",
-            "User-Agent": "Mozilla/5.0",
-            "Cookie": (
-                f"farmley_reports_session={cookie}"
-            )
-        }
+        cookie = _FRESH_COOKIE
 
-    # --------------------------------------------------------
-    # 2. LOCAL SAVED SESSION
-    # --------------------------------------------------------
-
-    cookie = load_saved_reports_cookie()
-
-    if cookie:
+    else:
 
         print(
-            "Using saved Reports session.",
+            "Creating fresh Reports authentication...",
             flush=True
         )
 
-        return {
-            "Accept": "*/*",
-            "User-Agent": "Mozilla/5.0",
-            "Cookie": (
-                f"farmley_reports_session={cookie}"
-            )
-        }
+        cookie = create_reports_session()
 
-    # --------------------------------------------------------
-    # 3. CREATE FRESH SESSION
-    # --------------------------------------------------------
-
-    print(
-        "No saved Reports session available.",
-        flush=True
-    )
-
-    print(
-        "Creating fresh Reports session...",
-        flush=True
-    )
-
-    cookie = create_reports_session()
+        _FRESH_COOKIE = cookie
 
     return {
         "Accept": "*/*",
         "User-Agent": "Mozilla/5.0",
-        "Cookie": (
-            f"farmley_reports_session={cookie}"
-        )
+        "Cookie": f"farmley_reports_session={cookie}"
     }
