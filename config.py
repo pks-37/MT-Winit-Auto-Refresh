@@ -1,6 +1,8 @@
 import os
 import json
 
+os.environ["PLAYWRIGHT_BROWSERS_PATH"] = "/ms-playwright"
+
 from playwright.sync_api import sync_playwright
 
 
