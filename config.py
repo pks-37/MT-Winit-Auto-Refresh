@@ -58,6 +58,7 @@ def create_reports_session():
 
         print("SFA login page opened.", flush=True)
 
+       
         # ----------------------------------------------------
         # LOGIN
         # ----------------------------------------------------
@@ -82,7 +83,36 @@ def create_reports_session():
 
         print("Login submitted.", flush=True)
 
-        page.wait_for_timeout(5000)
+        # Wait for the actual login navigation/state change
+        try:
+
+            page.wait_for_url(
+                lambda url: "/login" not in url,
+                timeout=30000
+            )
+
+            print(
+                "LOGIN SUCCESS - URL:",
+                page.url,
+                flush=True
+            )
+
+        except Exception:
+
+            print(
+                "LOGIN DID NOT LEAVE LOGIN PAGE.",
+                flush=True
+            )
+
+            print(
+                "CURRENT URL:",
+                page.url,
+                flush=True
+            )
+
+            raise Exception(
+                f"Winit login failed. Still on: {page.url}"
+            )
 
         print(
             "Current URL after login:",
@@ -91,7 +121,7 @@ def create_reports_session():
         )
 
         # ----------------------------------------------------
-        # INSPECT SFA AUTHENTICATION
+        # INSPECT AUTHENTICATION ON SFA DOMAIN
         # ----------------------------------------------------
 
         sfa_cookies = context.cookies()
@@ -108,6 +138,23 @@ def create_reports_session():
             ]),
             flush=True
         )
+
+        sfa_storage = page.evaluate(
+            """() => ({
+                localStorage: Object.keys(localStorage),
+                sessionStorage: Object.keys(sessionStorage)
+            })"""
+        )
+
+        print(
+            "SFA STORAGE:",
+            json.dumps(sfa_storage),
+            flush=True
+        )
+
+        # ----------------------------------------------------
+        # CAPTURE SFA STORAGE
+        # ----------------------------------------------------
 
         try:
 
@@ -133,48 +180,26 @@ def create_reports_session():
             )
 
         # ----------------------------------------------------
-        # OPEN REPORTS THROUGH SFA
+        # OPEN REPORTS
         # ----------------------------------------------------
 
-        print(
-            "Opening Reports Dashboard through SFA...",
-            flush=True
-        )
+        print("Opening Reports Dashboard...", flush=True)
 
-        reports_links = page.get_by_text(
-            "Reports",
-            exact=True
-        )
-
-        print(
-            "Reports elements found:",
-            reports_links.count(),
-            flush=True
-        )
-
-        if reports_links.count() == 0:
-
-            print(
-                "SFA PAGE TITLE:",
-                page.title(),
-                flush=True
-            )
-
-            raise Exception(
-                "Logged into SFA, but no Reports navigation was found."
-            )
-
-        reports_links.first.click()
-
-        page.wait_for_load_state(
-            "networkidle",
+        page.goto(
+            BASE_URL,
+            wait_until="networkidle",
             timeout=60000
         )
 
-        page.wait_for_timeout(5000)
+        page.wait_for_timeout(8000)
 
         print(
-            "Reports URL after SFA navigation:",
+            "Reports Dashboard opened.",
+            flush=True
+        )
+
+        print(
+            "Reports URL:",
             page.url,
             flush=True
         )
@@ -226,7 +251,7 @@ def create_reports_session():
             )
 
         # ----------------------------------------------------
-        # BUILD COOKIE HEADER
+        # BUILD COOKIE HEADER FROM WHATEVER EXISTS
         # ----------------------------------------------------
 
         cookie_header = "; ".join(
@@ -234,20 +259,28 @@ def create_reports_session():
             for c in cookies
         )
 
-        # Save URL before closing browser
-        final_url = page.url
-
         browser.close()
-
-        # ----------------------------------------------------
-        # VALIDATE
-        # ----------------------------------------------------
 
         if not cookie_header:
 
+            try:
+                final_storage = page.evaluate(
+                    """() => ({
+                        localStorage: Object.keys(localStorage),
+                        sessionStorage: Object.keys(sessionStorage)
+                    })"""
+                )
+            except Exception:
+                final_storage = {
+                    "localStorage": "UNAVAILABLE",
+                    "sessionStorage": "UNAVAILABLE"
+                }
+
             raise Exception(
                 "NO COOKIES | "
-                f"FINAL URL: {final_url}"
+                f"SFA URL: {SFA_URL} | "
+                f"REPORTS URL: {page.url} | "
+                f"STORAGE: {json.dumps(final_storage)}"
             )
 
         print(
