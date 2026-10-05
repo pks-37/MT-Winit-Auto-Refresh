@@ -1,297 +1,337 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <title>Winit Reports Update</title>
-
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    
-    <link rel="manifest" 
-        href="{{ url_for('static', filename='manifest.json') }}">
-
-    <meta name="theme-color" content="#ffc83d">
-
-    <link
-        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-        rel="stylesheet">
 
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
+            margin: 0;
+            min-height: 100vh;
             background: #0f1115;
             color: #f5f5f5;
-            min-height: 100vh;
+            font-family: Arial, Helvetica, sans-serif;
         }
 
-        .main-card {
+        .container {
+            width: 100%;
+            max-width: 640px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .card {
             background: #181b21;
-            border: 1px solid #2b3038;
-            border-radius: 16px;
-        }
-
-        .title {
-            color: #ffffff;
-            font-weight: 600;
-            letter-spacing: -0.5px;
-        }
-
-        .subtitle {
-            color: #9da4ae;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-
-        .form-label {
-            color: #e7e9ec;
-            font-weight: 500;
-        }
-
-        .form-control {
-            background: #111318;
-            border: 1px solid #363c45;
-            color: #ffffff;
-            border-radius: 8px;
-            height: 48px;
-        }
-
-        .form-control:focus {
-            background: #111318;
-            color: #ffffff;
-            border-color: #ffc83d;
-            box-shadow: 0 0 0 0.2rem rgba(255, 200, 61, 0.12);
-        }
-
-        .form-control::-webkit-calendar-picker-indicator {
-            filter: invert(1);
-            cursor: pointer;
-        }
-
-        .refresh-btn {
-            background: #ffc83d;
-            border: none;
-            color: #17213a;
-            font-weight: 600;
-            height: 48px;
-            border-radius: 8px;
-        }
-
-        .refresh-btn:hover {
-            background: #ffd45f;
-            color: #17213a;
-        }
-
-        .divider {
-            border-color: #2b3038;
-            opacity: 1;
-        }
-
-        .results-title {
-            color: #ffffff;
-            font-weight: 600;
-        }
-
-        .table {
-            --bs-table-bg: #111318;
-            --bs-table-color: #e7e9ec;
-            --bs-table-border-color: #2f353e;
-            margin-bottom: 0;
-        }
-
-        .table th {
-            color: #aeb5bf;
-            font-size: 13px;
-            font-weight: 600;
-        }
-
-        .table td {
-            vertical-align: middle;
-        }
-
-        .success-box {
-            background: #17251f;
-            border: 1px solid #28523f;
-            color: #d7f5e5;
-            border-radius: 8px;
+            border: 1px solid #30343d;
+            border-radius: 14px;
+            padding: 36px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
         }
 
         .logo {
-            width: 140px;
-            height: auto;
+            display: block;
+            width: 180px;
+            height: 180px;
+            object-fit: contain;
+            margin: 0 auto 25px auto;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 32px;
+            margin: 0 0 28px 0;
+        }
+
+        .description {
+            color: #aeb4c0;
+            font-size: 15px;
+            line-height: 1.5;
+            margin-bottom: 28px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .date-group {
+            margin-bottom: 22px;
+        }
+
+        input[type="date"] {
+            width: 100%;
+            height: 52px;
+            padding: 0 14px;
+            border-radius: 9px;
+            border: 1px solid #3a3f49;
+            background: #101217;
+            color: #ffffff;
+            font-size: 16px;
+            outline: none;
+            color-scheme: dark;
+        }
+
+        input[type="date"]:focus {
+            border-color: #ffc83d;
+            box-shadow: 0 0 0 2px rgba(255, 200, 61, 0.12);
+        }
+
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            filter: invert(1);
+            opacity: 1;
+        }
+
+        button {
+            width: 100%;
+            height: 52px;
+            border: none;
+            border-radius: 9px;
+            background: #ffc83d;
+            color: #111111;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        button:hover {
+            background: #ffd45f;
+        }
+
+        button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid #30343d;
+            margin: 32px 0;
+        }
+
+        h2 {
+            font-size: 21px;
+            margin-bottom: 18px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+        }
+
+        th,
+        td {
+            padding: 14px 10px;
+            text-align: left;
+            border: 1px solid #30343d;
+        }
+
+        th {
+            background: #101217;
+            color: #bfc5d0;
+            font-size: 14px;
+        }
+
+        td {
+            background: #12151a;
+        }
+
+        .success {
+            color: #ffffff;
+        }
+
+        .total {
+            margin-top: 18px;
+            padding: 18px;
+            border: 1px solid #235c42;
+            border-radius: 8px;
+            background: #10231b;
+            color: #d8e9df;
+        }
+
+        /* Loading overlay */
+        #loadingOverlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 17, 21, 0.88);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .spinner {
+            width: 55px;
+            height: 55px;
+            border: 5px solid #3a3f49;
+            border-top: 5px solid #ffc83d;
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+        }
+
+        .loading-text {
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .loading-subtext {
+            margin-top: 8px;
+            color: #aeb4c0;
+            font-size: 14px;
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                margin: 20px auto;
+                padding: 0 14px;
+            }
+
+            .card {
+                padding: 28px 20px;
+            }
+
+            .logo {
+                width: 150px;
+                height: 150px;
+            }
+
+            h1 {
+                font-size: 27px;
+            }
         }
     </style>
 </head>
 
-
 <body>
 
-<div class="container py-5">
-
-    <div class="row justify-content-center">
-
-        <div class="col-lg-6 col-md-8 col-12">
-
-            <div class="main-card shadow-lg">
-
-                <div class="card-body p-4 p-md-5">
-
-
-                    <!-- HEADER -->
-
-                    <div class="text-center mb-4">
-
-                        <img
-                            src="{{ url_for('static', filename='farmley-logo.png') }}"
-                            alt="Farmley"
-                            class="logo"
-                        >
-
-                        <h2 class="title mt-4 mb-0">
-                            Winit Reports Update
-                        </h2>
-
-                    </div>
-
-
-                    <!-- DESCRIPTION -->
-
-                    <p class="subtitle mb-4">
-                        Choose the date range for the data to be refreshed
-                        in the backend Google Sheet.
-                    </p>
-
-
-                    <!-- FORM -->
-
-                    <form method="POST">
-
-                        <div class="mb-3">
-
-                            <label class="form-label mb-2">
-                                Start Date
-                            </label>
-
-                            <input
-                                type="date"
-                                class="form-control"
-                                name="start_date"
-                                required
-                            >
-
-                        </div>
-
-
-                        <div class="mb-4">
-
-                            <label class="form-label mb-2">
-                                End Date
-                            </label>
-
-                            <input
-                                type="date"
-                                class="form-control"
-                                name="end_date"
-                                required
-                            >
-
-                        </div>
-
-
-                        <button
-                            class="refresh-btn w-100"
-                            type="submit">
-
-                            Refresh Reports
-
-                        </button>
-
-                    </form>
-
-
-                    <!-- RESULTS -->
-
-                    {% if completed %}
-
-                    <hr class="divider my-4">
-
-                    <h5 class="results-title mb-3">
-                        Results
-                    </h5>
-
-
-                    <div class="table-responsive">
-
-                        <table class="table table-bordered">
-
-                            <thead>
-
-                            <tr>
-
-                                <th>
-                                    Report
-                                </th>
-
-                                <th>
-                                    Status
-                                </th>
-
-                                <th>
-                                    Time
-                                </th>
-
-                            </tr>
-
-                            </thead>
-
-
-                            <tbody>
-
-                            {% for r in results %}
-
-                            <tr>
-
-                                <td>
-                                    {{ r.name }}
-                                </td>
-
-                                <td>
-                                    {{ r.status }}
-                                </td>
-
-                                <td>
-                                    {{ r.time }}
-                                </td>
-
-                            </tr>
-
-                            {% endfor %}
-
-                            </tbody>
-
-                        </table>
-
-                    </div>
-
-
-                    <div class="success-box p-3 mt-3">
-
-                        Total Time :
-                        <strong>{{ total_time }}</strong>
-
-                    </div>
-
-                    {% endif %}
-
-
-                </div>
-
+<div id="loadingOverlay">
+    <div class="spinner"></div>
+    <div class="loading-text">Refreshing Reports...</div>
+    <div class="loading-subtext">
+        Please don't close this page.
+    </div>
+</div>
+
+<div class="container">
+
+    <div class="card">
+
+        <img
+            src="{{ url_for('static', filename='farmley-logo.png') }}"
+            alt="Farmley"
+            class="logo"
+        >
+
+        <h1>Winit Reports Update</h1>
+
+        <div class="description">
+            Choose the date range for the data to be refreshed in the backend Google Sheet.
+        </div>
+
+        <form method="POST" id="refreshForm">
+
+            <div class="date-group">
+                <label for="start_date">Start Date</label>
+
+                <input
+                    type="date"
+                    id="start_date"
+                    name="start_date"
+                    required
+                >
             </div>
 
+            <div class="date-group">
+                <label for="end_date">End Date</label>
+
+                <input
+                    type="date"
+                    id="end_date"
+                    name="end_date"
+                    required
+                >
+            </div>
+
+            <button type="submit" id="refreshButton">
+                Refresh Reports
+            </button>
+
+        </form>
+
+        {% if completed %}
+
+        <hr>
+
+        <h2>Results</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Report</th>
+                    <th>Status</th>
+                    <th>Time</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for r in results %}
+                <tr>
+                    <td>{{ r.name }}</td>
+                    <td class="success">{{ r.status }}</td>
+                    <td>{{ r.time }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="total">
+            Total Time :
+            <strong>{{ total_time }}</strong>
         </div>
+
+        {% endif %}
 
     </div>
 
 </div>
 
-</body>
+<script>
+    const form = document.getElementById("refreshForm");
+    const overlay = document.getElementById("loadingOverlay");
+    const button = document.getElementById("refreshButton");
 
+    // Make clicking anywhere on the date field open the calendar
+    document.querySelectorAll('input[type="date"]').forEach(function (input) {
+        input.addEventListener("click", function () {
+            if (typeof this.showPicker === "function") {
+                this.showPicker();
+            }
+        });
+    });
+
+    // Loading screen when reports are being refreshed
+    form.addEventListener("submit", function () {
+        overlay.style.display = "flex";
+        button.disabled = true;
+        button.innerText = "Refreshing...";
+    });
+</script>
+
+</body>
 </html>
