@@ -1,0 +1,16 @@
+{
+    "name": "Farmley Winit Reports",
+    "short_name": "Winit Reports",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#0f1115",
+    "theme_color": "#ffc83d",
+    "description": "Farmley Winit Reports backend refresh tool",
+    "icons": [
+        {
+            "src": "/static/farmley-logo.png",
+            "sizes": "180x180",
+            "type": "image/png"
+        }
+    ]
+}
